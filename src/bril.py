@@ -1,25 +1,15 @@
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
-class Instruction:
-    def __init__(self, instr: Dict[str, Any]):
-        self.op: Optional[str] = instr.get('op')
-        self.instr = instr
-
-    def to_dict(self) -> Dict[str, Any]:
-        result = {}
-        if self.op is not None:
-            result['op'] = self.op
-        return result
-
-    def __repr__(self):
-        return json.dumps(self.to_dict())
+from logger.logger import logger
+from instruction.common import ValType
+from instruction.instruction import Instruction
 
 class Const(Instruction):
     def __init__(self, instr: Dict[str, Any]):
         super().__init__(instr)
         self.dest = instr.get('dest')
-        self.type = instr.get('type')
+        self.type = ValType.find(instr.get('type'))
         self.value = instr.get('value')
 
     def to_dict(self) -> Dict[str, Any]:
@@ -27,7 +17,7 @@ class Const(Instruction):
         if self.dest is not None:
             result['dest'] = self.dest
         if self.type is not None:
-            result['type'] = self.type
+            result['type'] = self.type.value
         if self.value is not None:
             result['value'] = self.value
         return result
@@ -36,7 +26,7 @@ class ValueOperation(Instruction):
     def __init__(self, instr: Dict[str, Any]):
         super().__init__(instr)
         self.dest = instr.get('dest')
-        self.type = instr.get('type')
+        self.type = ValType.find(instr.get('type'))
         self.args = instr.get('args', [])
         self.funcs = instr.get('funcs', [])
         self.labels = instr.get('labels', [])
@@ -46,7 +36,7 @@ class ValueOperation(Instruction):
         if self.dest is not None:
             result['dest'] = self.dest
         if self.type is not None:
-            result['type'] = self.type
+            result['type'] = self.type.value
         if self.args:
             result['args'] = self.args
         if self.funcs:
@@ -108,6 +98,9 @@ class Function:
             result['args'] = self.args
         if self.type is not None:
             result['type'] = self.type
+        if self.instrs is None:
+            logger.error(self.name)
+            logger.flush()
         result['instrs'] = [instr.to_dict() for instr in self.instrs]
         return result
 

@@ -1,5 +1,8 @@
+import json
 from typing import Dict, List, Set
 from bril import Function, Instruction
+from logger.logger import logger
+from util import new_name
 
 class BasicBlock:
     def __init__(self, label: str):
@@ -27,6 +30,10 @@ class CFG:
         # 2. Establish successor and predecessor relationships.
         # 3. Handle labels and control flow instructions.
         pass
+        # For naming, `util::fresh` is a good tool
+        # new_name
+        logger.info(json.dumps(self.function.to_dict(), indent=2))
+    
 
     def get_blocks(self) -> List[BasicBlock]:
         return list(self.blocks.values())

@@ -1,6 +1,7 @@
 from typing import Dict, List, Set
 from bril import Function, Instruction
 from cfg import CFG, BasicBlock
+from logger.logger import logger
 from dominance import DominatorTree
 
 def construct_ssa(function: Function):
@@ -9,6 +10,9 @@ def construct_ssa(function: Function):
     """
     cfg = CFG(function)
     dom_tree = DominatorTree(cfg)
+
+    logger.debug(str(function.instrs))
+    logger.debug(str(cfg.blocks))
 
     # Step 1: Variable Definition Analysis
     def_blocks = collect_definitions(cfg)
