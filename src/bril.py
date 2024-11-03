@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict
 
-from instruction.core import ConstOpType
+from instruction.const import ConstOpType
 from logger.logger import logger
 from instruction.common import ValType
 from instruction.instruction import Instruction
