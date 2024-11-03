@@ -2,6 +2,7 @@ import datetime
 from io import TextIOWrapper
 import sys
 from typing import Literal, Union
+import unittest
 
 Coloring = Literal["Disable", "OnLogType", "OnWholeMsg"]
 
@@ -129,3 +130,12 @@ class Logger:
 logger = Logger()
 """Global logger
 """
+
+class LoggedTestCase(unittest.TestCase):
+    """Unit test integration
+
+    `LoggedTestCase` is equivalent to `unittest.TestCase`
+    which will print log message using the global `Logger`
+    """
+    def __del__(self):
+        logger.debug(f"{type(self).__name__}::{self._testMethodName} is tested successfully")
