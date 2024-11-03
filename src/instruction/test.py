@@ -1,6 +1,7 @@
 from logger.logger import LoggedTestCase
 from instruction.common import ValType, OpType
-from instruction.core import CtrlOpType, LogicOpType
+from instruction.compute import LogicOpType
+from instruction.control import CtrlOpType
 
 class InstTest(LoggedTestCase):
     def test_keys(self):
