@@ -1,42 +1,99 @@
 import json
 from typing import Any, Dict
 
+from instruction.core import ConstOpType
 from logger.logger import logger
 from instruction.common import ValType
 from instruction.instruction import Instruction
 
 class Const(Instruction):
+    """Constant assignment instruction
+    """
+    
     def __init__(self, instr: Dict[str, Any]):
         super().__init__(instr)
-        self.dest = instr.get('dest')
-        self.type = ValType.find(instr.get('type'))
-        self.value = instr.get('value')
+        # guardian, check validity
+        if self.op != ConstOpType.CONST:
+            err = ValueError(f"Invalid {type(self)} construction: op: {self.op} is not {ConstOpType.CONST}")
+            logger.error(err)
+            raise err
+
+        tp = ValType.find(instr.get('type'))
+        if tp is None:
+            err = ValueError(f"Invalid {type(self)} construction: type: {tp} is not in {ValType.cases()}")
+            logger.error(err)
+            raise err
+
+        dest = instr.get('dest')
+        if not isinstance(dest, str):
+            err = ValueError(f"Invalid {type(self)} construction: dest: {dest} is not of type str")
+            logger.error(err)
+            raise err
+
+        value = instr.get('value')
+        if not isinstance(value, ValType.all_py_types()):
+            err = ValueError(f"Invalid {type(self)} construction: value: {value} is not in {possible_types}")
+            logger.error(err)
+            raise err
+            
+        self.dest = dest
+        self.type = tp
+        self.value = value
 
     def to_dict(self) -> Dict[str, Any]:
         result = super().to_dict()
-        if self.dest is not None:
-            result['dest'] = self.dest
-        if self.type is not None:
-            result['type'] = self.type.value
-        if self.value is not None:
-            result['value'] = self.value
+        result['dest'] = self.dest
+        result['type'] = self.type.value
+        result['value'] = self.value
         return result
 
 class ValueOperation(Instruction):
+    """Instruction that definitely has destination (value assignment)
+    """
+    
     def __init__(self, instr: Dict[str, Any]):
         super().__init__(instr)
-        self.dest = instr.get('dest')
-        self.type = ValType.find(instr.get('type'))
-        self.args = instr.get('args', [])
-        self.funcs = instr.get('funcs', [])
-        self.labels = instr.get('labels', [])
+
+        tp = ValType.find(instr.get('type'))
+        if tp is None:
+            err = ValueError(f"Invalid {type(self)} construction: type: {tp} is not in {ValType.cases()}")
+            logger.error(err)
+            raise err
+        
+        dest = instr.get('dest')
+        if not isinstance(dest, str):
+            err = ValueError(f"Invalid {type(self)} construction: dest: {dest} is not of type str")
+            logger.error(err)
+            raise err
+        
+        args = instr.get('args')
+        if args is not None and not isinstance(args, list):
+            err = ValueError(f"Invalid {type(self)} construction: args: {args} is not of type list")
+            logger.error(err)
+            raise err
+        
+        funcs = instr.get('funcs')
+        if funcs is not None and not isinstance(funcs, list):
+            err = ValueError(f"Invalid {type(self)} construction: funcs: {funcs} is not of type list")
+            logger.error(err)
+            raise err
+        
+        labels = instr.get('labels')
+        if labels is not None and not isinstance(labels, list):
+            err = ValueError(f"Invalid {type(self)} construction: labels: {labels} is not of type list")
+            logger.error(err)
+            raise err
+        
+        self.dest = dest
+        self.type = tp
+        self.args = args
+        self.funcs = funcs
+        self.labels = labels
 
     def to_dict(self) -> Dict[str, Any]:
         result = super().to_dict()
-        if self.dest is not None:
-            result['dest'] = self.dest
-        if self.type is not None:
-            result['type'] = self.type.value
+        result['dest'] = self.dest
+        result['type'] = self.type.value
         if self.args:
             result['args'] = self.args
         if self.funcs:
@@ -46,11 +103,38 @@ class ValueOperation(Instruction):
         return result
 
 class EffectOperation(Instruction):
+    """Instruction that has side effect without value assignment
+    """
+    
     def __init__(self, instr: Dict[str, Any]):
         super().__init__(instr)
-        self.args = instr.get('args', [])
-        self.funcs = instr.get('funcs', [])
-        self.labels = instr.get('labels', [])
+        # guardian, check validity
+        if not self.op.has_side_effect:
+            err = ValueError(f"Invalid {type(self)} construction: op: {self.op} has no side effect")
+            logger.error(err)
+            raise err
+        
+        args = instr.get('args')
+        if args is not None and not isinstance(args, list):
+            err = ValueError(f"Invalid {type(self)} construction: args: {args} is not of type list")
+            logger.error(err)
+            raise err
+        
+        funcs = instr.get('funcs')
+        if funcs is not None and not isinstance(funcs, list):
+            err = ValueError(f"Invalid {type(self)} construction: funcs: {funcs} is not of type list")
+            logger.error(err)
+            raise err
+        
+        labels = instr.get('labels')
+        if labels is not None and not isinstance(labels, list):
+            err = ValueError(f"Invalid {type(self)} construction: labels: {labels} is not of type list")
+            logger.error(err)
+            raise err
+        
+        self.args = args
+        self.funcs = funcs
+        self.labels = labels
 
     def to_dict(self) -> Dict[str, Any]:
         result = super().to_dict()
@@ -63,15 +147,21 @@ class EffectOperation(Instruction):
         return result
 
 class Label(Instruction):
+    """Pure label, not a real instruction
+    """
+    
     def __init__(self, instr: Dict[str, Any]):
         super().__init__(instr)
-        self.label = instr.get('label')
+        label = instr.get('label')
+        if not isinstance(label, str):
+            err = ValueError(f"Invalid {type(self)} construction: label {label} should be str")
+            logger.error(err)
+            raise err
+        
+        self.label = label
 
     def to_dict(self) -> Dict[str, Any]:
-        result = {}
-        if self.label is not None:
-            result['label'] = self.label
-        return result
+        return { 'label': self.label }
 
 class Function:
     def __init__(self, func: Dict[str, Any]):

@@ -5,6 +5,9 @@ from logger.logger import logger
 from instruction.common import OpType
 
 class Instruction:
+    """Abstract class of an instruction
+    """
+    
     def __init__(self, instr: Dict[str, Any]):
         self.op: Optional[OpType] = OpType.find(instr.get('op'))
         self.instr = instr
