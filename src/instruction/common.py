@@ -44,7 +44,11 @@ class OpType(Enum):
         return op_types
     
     @classmethod
-    def find(cls, op: Optional[str]):
+    def find(cls, op: Optional[str] | 'OpType'):
+        """Find the operator named op
+        """
+        if isinstance(op, OpType):
+            return op
         return op_types.get(op)
     
     @property
