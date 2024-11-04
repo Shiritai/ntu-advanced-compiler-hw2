@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from instruction.const import ConstOpType
 from logger.logger import logger
@@ -66,19 +66,19 @@ class ValueOperation(Instruction):
             logger.error(err)
             raise err
         
-        args = instr.get('args')
+        args: Optional[list[str]]  = instr.get('args')
         if args is not None and not isinstance(args, list):
             err = ValueError(f"Invalid {type(self)} construction: args: {args} is not of type list")
             logger.error(err)
             raise err
         
-        funcs = instr.get('funcs')
+        funcs: Optional[list[str]]  = instr.get('funcs')
         if funcs is not None and not isinstance(funcs, list):
             err = ValueError(f"Invalid {type(self)} construction: funcs: {funcs} is not of type list")
             logger.error(err)
             raise err
         
-        labels = instr.get('labels')
+        labels: Optional[list[str]]  = instr.get('labels')
         if labels is not None and not isinstance(labels, list):
             err = ValueError(f"Invalid {type(self)} construction: labels: {labels} is not of type list")
             logger.error(err)
@@ -114,19 +114,19 @@ class EffectOperation(Instruction):
             logger.error(err)
             raise err
         
-        args = instr.get('args')
+        args: Optional[list[str]]  = instr.get('args')
         if args is not None and not isinstance(args, list):
             err = ValueError(f"Invalid {type(self)} construction: args: {args} is not of type list")
             logger.error(err)
             raise err
         
-        funcs = instr.get('funcs')
+        funcs: Optional[list[str]]  = instr.get('funcs')
         if funcs is not None and not isinstance(funcs, list):
             err = ValueError(f"Invalid {type(self)} construction: funcs: {funcs} is not of type list")
             logger.error(err)
             raise err
         
-        labels = instr.get('labels')
+        labels: Optional[list[str]] = instr.get('labels')
         if labels is not None and not isinstance(labels, list):
             err = ValueError(f"Invalid {type(self)} construction: labels: {labels} is not of type list")
             logger.error(err)
