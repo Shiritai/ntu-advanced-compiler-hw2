@@ -1,7 +1,7 @@
 import datetime
 from io import TextIOWrapper
 import sys
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 import unittest
 
 Coloring = Literal["Disable", "OnLogType", "OnWholeMsg"]
@@ -137,5 +137,13 @@ class LoggedTestCase(unittest.TestCase):
     `LoggedTestCase` is equivalent to `unittest.TestCase`
     which will print log message using the global `Logger`
     """
-    def __del__(self):
-        logger.debug(f"{type(self).__name__}::{self._testMethodName} is tested successfully")
+    def run(self, result: Optional[unittest.TestResult]):
+        fail_cnt, err_cnt = len(result.failures), len(result.errors)
+        res = super().run(result)
+        if len(res.errors) > err_cnt:
+            logger.error(f"{type(self).__name__}::{self._testMethodName} error occurs: {res.errors[-1][1]}")
+        elif len(res.failures) > fail_cnt:
+            logger.error(f"{type(self).__name__}::{self._testMethodName} failed: {res.failures[-1][1]}")
+        else:
+            logger.debug(f"{type(self).__name__}::{self._testMethodName} passed")
+        return res
