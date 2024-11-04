@@ -1,6 +1,5 @@
 import sys
 from bril import parse_bril, serialize_bril, Program
-from instruction.core import register_type
 from ssa_construct import construct_ssa
 
 def main():
@@ -31,6 +30,4 @@ def main():
         print(json_output)
 
 if __name__ == '__main__':
-    register_type()  # register types in any cases
-    
     main()
