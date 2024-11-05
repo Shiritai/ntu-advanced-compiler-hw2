@@ -28,15 +28,31 @@ def construct_ssa(function: Function):
 
 def collect_definitions(cfg: CFG):
     """
-    Collects the set of basic blocks in which each variable is defined.
+    Collects (global_names, defs, val_kill)
+    
+    Args:
+        global_names (dict[str, set[BasicBlock]]):
+            variables that are of interest in multiple defs
+        defs (dict[str, set[str]]):
+            the set of basic blocks in which each variable is defined
+        val_kill (set[str]):
+            variables that is defined in each block
     """
     # TODO: Implement variable definition collection
-    collected: Dict[str, Set[BasicBlock]] = {}
+    defs: dict[str, set[BasicBlock]] = {}
+    val_kill: dict[str, set[str]] = {}
+    global_names = set()
     for label, bb in cfg.blocks.items():
         for inst in bb.insts:
             if isinstance(inst, (Const, ValueOperation)):
-                collected.setdefault(inst.dest, set()).add(label)
-    return collected
+                if (isinstance(inst, ValueOperation)
+                    and inst.args is not None):
+                    for arg in inst.args:
+                        if arg not in val_kill.setdefault(label, set()):
+                            global_names.add(arg)
+                val_kill.setdefault(label, set()).add(inst.dest)
+                defs.setdefault(inst.dest, set()).add(label)
+    return global_names, defs, val_kill
 
 def insert_phi_functions(cfg: CFG, dom_tree: DominatorTree, def_blocks: Dict[str, Set[BasicBlock]]):
     """
