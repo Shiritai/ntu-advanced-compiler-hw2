@@ -44,16 +44,8 @@ class Dom2Idom(Convertor):
             if len(bb.preds) == 0:  # first block
                 idom[bb] = None
             else:
-                bfs = deque((bb,))
-                seen = set(bfs)
-                while len(bfs) != 0:
-                    pred = bfs.popleft()
-                    if pred != bb and pred in bb_dom:
-                        # found idom
-                        idom[bb] = pred
-                        break
-                    bfs.extend(p for p in pred.preds if p not in seen)
-                    seen.update(pred.preds)
+                candidates = { d: len(dom[d]) for d in bb_dom if d != bb }
+                idom[bb] = max(candidates.items(), key=lambda e: e[1])[0]
         return idom
 
 class Idom2Df(Convertor):
