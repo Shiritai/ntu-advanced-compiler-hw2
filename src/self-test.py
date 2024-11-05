@@ -4,6 +4,7 @@ import sys
 from unittest import TextTestRunner, TestSuite, defaultTestLoader
 from cfg import CFG, BasicBlock
 from bril import parse_bril
+from ssa_construct import collect_definitions
 from dominance import Cfg2Dom, Dom2Idom, DominatorTree, Idom2Df
 from logger.logger import LoggedTestCase
 from logger.test import LoggerTest
@@ -117,10 +118,26 @@ class DomTest(LoggedTestCase):
         asq(bb2labels(label_dom['b7']), set(('b3',)))
         asq(bb2labels(label_dom['b8']), set(('b7',)))
 
-
+class SsaTest(LoggedTestCase):
+    def test_collect_definitions(self):
+        program = load_example_program()
+        cfg = CFG(program.functions[0])
+        def_bbs = collect_definitions(cfg)
+        asq = self.assertSetEqual
+        asq(def_bbs['i'], set(('b0', 'b3')))
+        asq(def_bbs['a'], set(('b1', 'b5')))
+        asq(def_bbs['b'], set(('b2', 'b7')))
+        asq(def_bbs['c'], set(('b1', 'b2', 'b8')))
+        asq(def_bbs['d'], set(('b2', 'b5', 'b6')))
+        asq(def_bbs['y'], set(('b3',)))
+        asq(def_bbs['z'], set(('b3',)))
+        asq(def_bbs['hundred'], set(('b3',)))
+        asq(def_bbs['cond'], set(('b1',)))
+        asq(def_bbs['cond2'], set(('b3',)))
+        asq(def_bbs['cond3'], set(('b5',)))
 
 if __name__ == '__main__':
-    cases = (LoggerTest, BasicBlockTest, InstTest, CfgTest, DomTest)
+    cases = (LoggerTest, BasicBlockTest, InstTest, CfgTest, DomTest, SsaTest)
     suites = TestSuite(defaultTestLoader.loadTestsFromTestCase(t)
                        for t in cases)
     res = TextTestRunner().run(suites)

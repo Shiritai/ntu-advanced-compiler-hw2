@@ -1,5 +1,5 @@
 from typing import Dict, List, Set
-from bril import Function, Instruction
+from bril import Const, Function, Instruction, ValueOperation
 from cfg import CFG, BasicBlock
 from logger.logger import logger
 from dominance import DominatorTree
@@ -26,12 +26,17 @@ def construct_ssa(function: Function):
     # After transformation, update the function's instructions
     function.instrs = reconstruct_instructions(cfg)
 
-def collect_definitions(cfg: CFG) -> Dict[str, Set[BasicBlock]]:
+def collect_definitions(cfg: CFG):
     """
     Collects the set of basic blocks in which each variable is defined.
     """
     # TODO: Implement variable definition collection
-    pass
+    collected: Dict[str, Set[BasicBlock]] = {}
+    for label, bb in cfg.blocks.items():
+        for inst in bb.insts:
+            if isinstance(inst, (Const, ValueOperation)):
+                collected.setdefault(inst.dest, set()).add(label)
+    return collected
 
 def insert_phi_functions(cfg: CFG, dom_tree: DominatorTree, def_blocks: Dict[str, Set[BasicBlock]]):
     """
