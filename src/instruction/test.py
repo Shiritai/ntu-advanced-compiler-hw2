@@ -6,7 +6,7 @@ from instruction.control import CtrlOpType
 class InstTest(LoggedTestCase):
     def test_keys(self):
         self.assertSetEqual(set(ValType.cases().keys()),
-                            { 'int', 'bool' })
+                            { 'int', 'bool', 'unknown', 'undefined' })
         self.assertSetEqual(set(OpType.cases().keys()),
                             { 'const', 'add', 'sub',
                               'mul',   'div', 'eq',
@@ -27,4 +27,4 @@ class InstTest(LoggedTestCase):
         
   
     def test_classmethod(self):
-        self.assertEqual(set(ValType.all_py_types()), set((bool, int)))
+        self.assertEqual(set(ValType.all_py_types()), set((bool, int, None)))

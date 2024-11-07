@@ -21,5 +21,12 @@ class CoreValType(ValType):
         }
         return mapping[self]
 
+class NullityType(ValType):
+    """Unknown, undefined types
+    """
+    UNKNOWN = "unknown"
+    UNDEFINED = "undefined"
+    
 def register_type():
     ValType.register(CoreValType)
+    ValType.register(NullityType)
