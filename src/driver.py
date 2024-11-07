@@ -18,8 +18,8 @@ def main():
 
     program = parse_bril(json_input)
 
-    # for function in program.functions:
-    #     construct_ssa(function)
+    for function in program.functions:
+        construct_ssa(function)
 
     json_output = serialize_bril(program)
 
