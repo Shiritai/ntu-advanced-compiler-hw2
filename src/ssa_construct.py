@@ -154,9 +154,13 @@ def rename_variables(cfg: CFG,
         cfg.function.args[arg_idx]['name'] = rename(cfg.function.args[arg_idx]['name'])
     scan_and_rename(cfg.entry_block)
 
-def reconstruct_instructions(cfg: CFG) -> List[Instruction]:
+def reconstruct_instructions(cfg: CFG) -> list[Instruction]:
     """
     Reconstructs the instruction list from the CFG after SSA transformation.
     """
     # TODO: Implement instruction reconstruction
-    pass
+    insts = []
+    for label, block in cfg.blocks.items():
+        insts.append(Label({ "label": label }))
+        insts.extend(block.insts)
+    return insts
