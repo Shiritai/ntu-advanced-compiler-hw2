@@ -14,17 +14,16 @@ def construct_ssa(function: Function):
     cfg = CFG(function)
     dom_tree = DominatorTree(cfg)
 
-    logger.debug(str(function.instrs))
-    logger.debug(str(cfg.blocks))
-
     # Step 1: Variable Definition Analysis
-    def_blocks = collect_definitions(cfg)
+    defs, global_names, _ = collect_definitions(cfg)
+    # global_d2b = def2global_d2b(defs, global_names)
 
     # Step 2: Insert φ-Functions
-    insert_phi_functions(cfg, dom_tree, def_blocks)
+    # insert_phi_functions(dom_tree, global_d2b)
+    insert_phi_functions(dom_tree, defs)
 
     # Step 3: Rename Variables
-    rename_variables(cfg, dom_tree)
+    rename_variables(cfg, dom_tree, defs, global_names)
 
     # After transformation, update the function's instructions
     function.instrs = reconstruct_instructions(cfg)
