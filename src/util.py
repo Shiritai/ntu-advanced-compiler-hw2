@@ -8,15 +8,15 @@ def flatten(ll: Collection) -> list:
     return list(itertools.chain(*ll))
 
 
-def new_name(prefix: str, names: Collection[str]):
+def new_name(prefix: str, names: Collection[str], count_from = 1):
     """Generate a new name that is not in `names` starting with `prefix`.
+    Includes NO modification to `names`
     """
-    i = 1
     while True:
-        name = f"{prefix}{i}"
+        name = f"{prefix}{count_from}"
         if name not in names:
             return name
-        i += 1
+        count_from += 1
 
 class Convertor(metaclass = abc.ABCMeta):
     @classmethod
