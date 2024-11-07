@@ -5,6 +5,9 @@ val_types: Dict[str, 'ValType'] = {}
 
 @unique
 class ValType(Enum):
+    """General value type
+    """
+    
     @classmethod
     def register(cls, tp: type['ValType']):
         val_types.update({t.value: t for t in tp})
@@ -28,11 +31,26 @@ class ValType(Enum):
         """Return the corresponding type in Python, default to `None`
         """
         return None
+    
+    @property
+    def random_val(self):
+        """Generate a random value of this type in python data structure
+        """
+        return None
+    
+    @property
+    def random_bril_val(self):
+        """Generate a random value of this type in bril format
+        """
+        raise NotImplementedError
 
 op_types: Dict[str, 'OpType'] = {}
 
 @unique
 class OpType(Enum):
+    """General operator type
+    """
+    
     @classmethod
     def register(cls, tp: type['OpType']):
         op_types.update({t.value: t for t in tp})

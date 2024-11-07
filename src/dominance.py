@@ -40,7 +40,7 @@ class Dom2Idom(Convertor):
         """
         # TODO: Compute immediate dominators based on the dominator sets.
         idom: dict[BasicBlock, Optional[BasicBlock]] = {}
-        for (bb, bb_dom) in dom.items():
+        for bb, bb_dom in dom.items():
             candidates = { d: len(dom[d]) for d in bb_dom if d != bb }
             if len(candidates) == 0:  # first block
                 idom[bb] = None

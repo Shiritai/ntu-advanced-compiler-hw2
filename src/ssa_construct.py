@@ -1,6 +1,7 @@
 from collections import deque
-from bril import Const, EffectOperation, Function, Instruction, Label, ValueOperation
+from bril import Const, Function, Instruction, Label, ValueOperation
 from cfg import CFG, BasicBlock
+from instruction.value import NullityType
 from instruction.common import ValType
 from instruction.ssa import SsaOpType
 from util import new_name
@@ -98,59 +99,64 @@ def rename_variables(cfg: CFG,
     # TODO: Implement variable renaming
     names = set(defs)
     rename_stacks: dict[str, list[int]] = {}
+    sep = '.'
 
     def rename(var: str):
-        renamed_var = new_name(f"{var}.", names, 0)
+        renamed_var = new_name(f"{var}{sep}", names, 0)
         names.add(renamed_var)
         rename_stacks.setdefault(var, []).append(renamed_var)
         return renamed_var
-
-    def scan_and_rename(bb: BasicBlock, depth = 0):
+    
+    def scan_and_rename(bb: BasicBlock):
+        # Snapshot current stack for restoration
+        # at the end of this recursive function
         snapshot = { k: list(v) for k, v in rename_stacks.items() }
 
+        # Rename dest of phis
         for phi in bb.get_by_op(SsaOpType.PHI):
             phi.dest = rename(phi.dest)
 
-        local_defs: set[str] = set()
+        # Rename all the variables in the successor renamed in this BB
+        local_defs: set[str] = set()  # local definition of the successor
         for i in bb.insts:
-            if (isinstance(i, (ValueOperation, Const)) and
-                i.op != SsaOpType.PHI):
+            if i.op != SsaOpType.PHI:
                 if hasattr(i, 'args') and i.args is not None:
                     i.args = [rename_stacks[arg][-1] if arg in rename_stacks else arg
                               for arg in i.args]
-                if i.dest in global_names or i.dest in local_defs or i.dest.find('.') == -1:
-                    i.dest = rename(i.dest)
-                local_defs.add(i.dest)
-            if (isinstance(i, EffectOperation) and
-                i.op != SsaOpType.PHI):
-                if hasattr(i, 'args') and i.args is not None:
-                    i.args = [rename_stacks[arg][-1] if arg in rename_stacks else arg
-                              for arg in i.args]
+                if hasattr(i, 'dest') and i.dest is not None:
+                    if i.dest in global_names or i.dest in local_defs or sep not in i.dest:
+                        i.dest = rename(i.dest)
+                    local_defs.add(i.dest)
 
-        # rename phi in succ
+        # rename phi arguments in successor
         for sbb in bb.succs:
             for i in sbb.insts:
-                if (isinstance(i, ValueOperation) and
-                    i.op == SsaOpType.PHI):
-                    # TODO fill in phi parameters
-                    dot = i.dest.find('.')
-                    var = i.dest if dot == -1 else i.dest[:dot]
-                    if rename_stacks.get(var) is not None:
+                if i.op == SsaOpType.PHI:
+                    if not isinstance(i.dest, str):
+                        err = ValueError(f"Invalid destination for inst {i}")
+                        logger.error(err)
+                        raise err
+                    dot = i.dest.split(sep)
+                    var = sep.join(dot if len(dot) == 1 else dot[:-1])
+                    if var in rename_stacks:
                         i.args.append(rename_stacks[var][-1])
-                        i.labels.append(bb.label)
                     else:
-                        i.args.append(f"{var}.undefined")
-                        i.labels.append(bb.label)
+                        i.args.append(f"{var}.{NullityType.UNDEFINED.name}")
+                    # Add corresponding label
+                    i.labels.append(bb.label)
                     
+        # Recursive rename based on the dominator tree
         for sbb in dom_tree.children.get(bb.label, []):
-            scan_and_rename(sbb, depth + 1)
+            scan_and_rename(sbb)
 
+        # Restore stack state
         rename_stacks.clear()
         rename_stacks.update(snapshot)
 
     # Include function arguments
-    for arg_idx in range(len(cfg.function.args)):
-        cfg.function.args[arg_idx]['name'] = rename(cfg.function.args[arg_idx]['name'])
+    for arg in cfg.function.args:
+        arg['name'] = rename(arg['name'])
+    # Start recursive rename
     scan_and_rename(cfg.entry_block)
 
 def reconstruct_instructions(cfg: CFG) -> list[Instruction]:

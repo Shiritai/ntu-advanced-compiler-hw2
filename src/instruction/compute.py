@@ -23,7 +23,7 @@ class ArithOpType(OpType):
         return 2
 
 class CompOpType(OpType):
-    """Core comparision operator
+    """Core comparison operator
     """
 
     EQ = "eq"
@@ -34,14 +34,6 @@ class CompOpType(OpType):
     
     @property
     def nargs(self) -> int:
-        """Get the number of the arguments of `op`
-
-        Args:
-            op (OpType): operator
-
-        Returns:
-            int: the number of the arguments
-        """
         return 2
     
 class LogicOpType(OpType):
@@ -54,14 +46,6 @@ class LogicOpType(OpType):
     
     @property
     def nargs(self) -> int:
-        """Get the number of the arguments of `op`
-
-        Args:
-            op (OpType): operator
-
-        Returns:
-            int: the number of the arguments
-        """
         return 2 if self != self.NOT else 1
 
 def register_type():
