@@ -14,7 +14,9 @@ class ValType(Enum):
         return val_types
     
     @classmethod
-    def find(cls, tp: Optional[str]):
+    def find(cls, tp: Optional[str] | 'ValType'):
+        if isinstance(tp, ValType):
+            return tp
         return val_types.get(tp)
     
     @classmethod
