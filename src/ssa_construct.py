@@ -77,7 +77,13 @@ def insert_phi_functions(dom_tree: DominatorTree,
     Inserts φ-functions into the basic defs.
     """
     # TODO: Implement φ-function insertion using dominance frontiers
-    pass
+    for var, (def_blocks, def_type) in global_d2b.items():
+        q = deque(def_blocks)
+        while len(q) > 0:
+            b = q.popleft()
+            for df in dom_tree.dom_frontiers[b]:
+                if df.insert_phi_if_not_exist_for(var, def_type):
+                    q.append(df)
 
 def rename_variables(cfg: CFG, dom_tree: DominatorTree):
     """
