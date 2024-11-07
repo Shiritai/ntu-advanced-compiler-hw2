@@ -145,5 +145,5 @@ class LoggedTestCase(unittest.TestCase):
         elif len(res.failures) > fail_cnt:
             logger.error(f"{type(self).__name__}::{self._testMethodName} failed: {res.failures[-1][1]}")
         else:
-            logger.debug(f"{type(self).__name__}::{self._testMethodName} passed")
+            logger.info(f"{type(self).__name__}::{self._testMethodName} passed")
         return res
