@@ -9,9 +9,9 @@ from logger.logger import logger
 from util import Convertor, new_name
 
 class BasicBlock:
-    def __init__(self, label: str, insts: list[Instruction] = list()):
+    def __init__(self, label: str, insts: list[Instruction] = None):
         self.label = label
-        self.insts = insts
+        self.insts = insts if insts is not None else []
         self.preds: set['BasicBlock'] = set()
         """predecessor blocks
         """
@@ -99,16 +99,18 @@ class BasicBlockDict2Cfg(Convertor):
     @classmethod
     def _add_first_block_if_need(cls, named_bb: OrderedDict[str, BasicBlock]):
         first_bb = next(iter(named_bb.keys()))
-        if any(isinstance(bb, (ValueOperation, EffectOperation))
-               and bb.labels is not None
-               and first_bb in bb.labels  # first_bb is referenced
-               for bb in named_bb.values()):
-            # there is at least one reference to the first bb
-            # -> create a pure entry without in-edge
-            leading = BasicBlock(new_name('fresh', named_bb))
-            # Add a psudo leading BB and move it to the front of OrderedDict
-            named_bb[leading.label] = leading
-            named_bb.move_to_end(leading.label, last=False)
+        for bb in named_bb.values():
+            if any(isinstance(i, (ValueOperation, EffectOperation))
+                and i.labels is not None
+                and first_bb in i.labels  # first_bb is referenced
+                for i in bb.insts):
+                # there is at least one reference to the first bb
+                # -> create a pure entry without in-edge
+                leading = BasicBlock(new_name('fresh', named_bb))
+                # Add a psudo leading BB and move it to the front of OrderedDict
+                named_bb[leading.label] = leading
+                named_bb.move_to_end(leading.label, last=False)
+                break
     
     @classmethod
     def _patch_and_link(cls, named_bb: OrderedDict[str, BasicBlock]):
