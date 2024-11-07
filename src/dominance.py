@@ -34,17 +34,17 @@ class Cfg2Dom(Convertor):
 class Dom2Idom(Convertor):
     @classmethod
     def convert(cls,
-                 dom: dict[BasicBlock, set[BasicBlock]]) -> dict[BasicBlock, Optional[BasicBlock]]:
+                dom: dict[BasicBlock, set[BasicBlock]]) -> dict[BasicBlock, Optional[BasicBlock]]:
         """
         Computes the immediate dominator for each basic block.
         """
         # TODO: Compute immediate dominators based on the dominator sets.
         idom: dict[BasicBlock, Optional[BasicBlock]] = {}
         for (bb, bb_dom) in dom.items():
-            if len(bb.preds) == 0:  # first block
+            candidates = { d: len(dom[d]) for d in bb_dom if d != bb }
+            if len(candidates) == 0:  # first block
                 idom[bb] = None
             else:
-                candidates = { d: len(dom[d]) for d in bb_dom if d != bb }
                 idom[bb] = max(candidates.items(), key=lambda e: e[1])[0]
         return idom
 
