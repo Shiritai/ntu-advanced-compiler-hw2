@@ -1,8 +1,12 @@
 from collections import OrderedDict
-from bril import EffectOperation, Function, Instruction, Label, ValueOperation
+from bril import Const, EffectOperation, Function, Instruction, Label, ValueOperation
+from instruction.value import NullityType
+from instruction.common import OpType, ValType
+from instruction.ssa import SsaOpType
 from instruction.control import CtrlOpType
+from instruction.instruction import Instruction
 from logger.logger import logger
-from util import Convertor, flatten, new_name
+from util import Convertor, new_name
 
 class BasicBlock:
     def __init__(self, label: str, insts: list[Instruction] = list()):
@@ -17,6 +21,36 @@ class BasicBlock:
 
     def __repr__(self):
         return f'BasicBlock({self.label})'
+    
+    def get_by_op(self, op: OpType) -> list[Instruction]:
+        """Query all instructions by op: `OpType` in instruction order
+
+        Args:
+            op (OpType): operation type to search
+        """
+        return [ i for i in self.insts if i.op == op ]
+
+    def insert_phi_if_not_exist_for(self, var: str, tp: ValType = NullityType.UNKNOWN):
+        pos = 0
+        for i in self.insts:
+            if hasattr(i, 'dest') and isinstance(i.dest, str) and i.dest == var:
+                if i.op == SsaOpType.PHI:
+                    return False
+                else:
+                    possible_types = (ValueOperation, Const)
+                    if not isinstance(i, possible_types):
+                        err = ValueError(f"Invalid instruction {i} has dest but not in {possible_types}")
+                        logger.error(err)
+                        raise err
+            if i.op == SsaOpType.PHI and i.dest < var:
+                pos += 1
+                
+        # phi for var DNE, insert one
+        self.insts.insert(pos, ValueOperation({
+            "op": SsaOpType.PHI, "args": [], "labels": [],
+            "dest": var, "type": tp }))
+        return True
+                
 
 class Inst2BasicBlockDict(Convertor):
     @classmethod
@@ -154,6 +188,12 @@ class CFG:
         self.entry_block = BasicBlockDict2Cfg.convert(self.blocks)
         """The first block of this `CFG`
         """
+        
+    def view_blocks(self):
+        for bb in self.blocks.values():
+            logger.info(f"[ {bb} ]")
+            for i in bb.insts:
+                logger.info(f"\t{i}")
 
     def get_blocks(self) -> list[BasicBlock]:
         return list(self.blocks.values())
