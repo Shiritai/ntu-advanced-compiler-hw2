@@ -66,9 +66,21 @@ class Idom2Df(Convertor):
                         cur = idom[cur]
         return df
 
+class Idom2DomTree(Convertor):
+    @classmethod
+    def convert(cls, idom: dict[BasicBlock, Optional[BasicBlock]]):
+        dom_links: dict[str, list[BasicBlock]] = {}
+        for bb, _idom in idom.items():
+            if _idom is not None:
+                dom_links.setdefault(_idom.label, []).append(bb)
+        return { k: sorted(v, key=lambda bb: bb.label) for k, v in dom_links.items() }
+
 class DominatorTree:
     def __init__(self, cfg: CFG):
         self.cfg = cfg
         self.dom = Cfg2Dom.convert(self.cfg)
         self.idom = Dom2Idom.convert(self.dom)
         self.dom_frontiers = Idom2Df.convert(self.idom)
+        self.children = Idom2DomTree.convert(self.idom)
+        """blocks under block `(subscripting bb)` in this Dominator tree
+        """
