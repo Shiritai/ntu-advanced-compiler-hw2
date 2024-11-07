@@ -29,19 +29,22 @@ def construct_ssa(function: Function):
 def collect_definitions(cfg: CFG):
     """
     Collects (global_names, defs, val_kill)
-    
-    Args:
-        global_names (dict[str, set[BasicBlock]]):
-            variables that are of interest in multiple defs
-        defs (dict[str, set[str]]):
+
+    Returns:
+        `(defs, global_names, val_kill)`
+
+        defs (dict[str, tuple[set[BasicBlock], ValType]]):
             the set of basic blocks in which each variable is defined
+        global_names (dict[str, set[str]]):
+            variables that are of interest in multiple defs
         val_kill (set[str]):
             variables that is defined in each block
     """
     # TODO: Implement variable definition collection
-    defs: dict[str, set[BasicBlock]] = {}
+    defs: dict[str, tuple[set[BasicBlock], ValType]] = {}
     val_kill: dict[str, set[str]] = {}
-    global_names = set()
+    global_names: set[str] = set()
+    
     for label, bb in cfg.blocks.items():
         for inst in bb.insts:
             if isinstance(inst, (Const, ValueOperation)):
@@ -51,12 +54,27 @@ def collect_definitions(cfg: CFG):
                         if arg not in val_kill.setdefault(label, set()):
                             global_names.add(arg)
                 val_kill.setdefault(label, set()).add(inst.dest)
-                defs.setdefault(inst.dest, set()).add(label)
-    return global_names, defs, val_kill
+                defs.setdefault(inst.dest, (set(), inst.type))[0].add(bb)
+                
+    return defs, global_names, val_kill
 
-def insert_phi_functions(cfg: CFG, dom_tree: DominatorTree, def_blocks: Dict[str, Set[BasicBlock]]):
+def def2global_d2b(defs: dict[str, tuple[set[BasicBlock], ValType]],
+                   global_names: set[str]):
+    """Get global definition-block map
+
+    Args:
+        defs (dict[str, set[BasicBlock]]): all possible definitions
+        global_names (set[str]): variables used cross `BasicBlock`s in such cfg
+
+    Returns:
+        dict[str, tuple[set[BasicBlock], ValType]]: global definition-(blocks, type) map
     """
-    Inserts φ-functions into the basic blocks.
+    return { k: v for k, v in defs.items() if k in global_names }
+
+def insert_phi_functions(dom_tree: DominatorTree,
+                         global_d2b: dict[str, tuple[set[BasicBlock], ValType]]):
+    """
+    Inserts φ-functions into the basic defs.
     """
     # TODO: Implement φ-function insertion using dominance frontiers
     pass
