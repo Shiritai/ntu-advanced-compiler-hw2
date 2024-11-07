@@ -1,16 +1,16 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from instruction.const import ConstOpType
 from logger.logger import logger
 from instruction.common import ValType
-from instruction.instruction import Instruction
+from instruction.instruction import Instruction, ConstInst, ValueOperationInst, EffectOperationInst, LabelInst
 
 class Const(Instruction):
     """Constant assignment instruction
     """
     
-    def __init__(self, instr: Dict[str, Any]):
+    def __init__(self, instr: ConstInst):
         super().__init__(instr)
         # guardian, check validity
         if self.op != ConstOpType.CONST:
@@ -40,7 +40,7 @@ class Const(Instruction):
         self.type = tp
         self.value = value
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         result['dest'] = self.dest
         result['type'] = self.type.value
@@ -49,9 +49,14 @@ class Const(Instruction):
 
 class ValueOperation(Instruction):
     """Instruction that definitely has destination (value assignment)
+    e.g.
+    * x = y + z (binary operation)
+    * x = a (copy)
+    * x = func(...) (function call)
+    * x = phi(...) (phi function)
     """
     
-    def __init__(self, instr: Dict[str, Any]):
+    def __init__(self, instr: ValueOperationInst):
         super().__init__(instr)
 
         tp = ValType.find(instr.get('type'))
@@ -90,7 +95,7 @@ class ValueOperation(Instruction):
         self.funcs = funcs
         self.labels = labels
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         result['dest'] = self.dest
         result['type'] = self.type.value
@@ -106,7 +111,7 @@ class EffectOperation(Instruction):
     """Instruction that has side effect without value assignment
     """
     
-    def __init__(self, instr: Dict[str, Any]):
+    def __init__(self, instr: EffectOperationInst):
         super().__init__(instr)
         # guardian, check validity
         if not self.op.has_side_effect:
@@ -136,7 +141,7 @@ class EffectOperation(Instruction):
         self.funcs = funcs
         self.labels = labels
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = super().to_dict()
         if self.args:
             result['args'] = self.args
@@ -150,7 +155,7 @@ class Label(Instruction):
     """Pure label, not a real instruction
     """
     
-    def __init__(self, instr: Dict[str, Any]):
+    def __init__(self, instr: LabelInst):
         super().__init__(instr)
         label = instr.get('label')
         if not isinstance(label, str):
@@ -160,17 +165,22 @@ class Label(Instruction):
         
         self.label = label
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return { 'label': self.label }
 
 class Function:
-    def __init__(self, func: Dict[str, Any]):
+    def __init__(self, func: dict[str, Any]):
         self.name = func.get('name')
-        self.args = func.get('args', [])
+        args: Optional[list[dict[str, str]]] = func.get('args', [])
+        if not isinstance(args, list):
+            err = ValueError(f"Invalid args {args} in function {func}")
+            logger.error(err)
+            raise err
+        self.args = args
         self.type = func.get('type')
         self.instrs = [self._parse_instr(instr) for instr in func.get('instrs', [])]
 
-    def _parse_instr(self, instr: Dict[str, Any]) -> Instruction:
+    def _parse_instr(self, instr: dict[str, Any]) -> Instruction:
         if 'label' in instr:
             return Label(instr)
         else:
@@ -182,7 +192,7 @@ class Function:
             else:
                 return EffectOperation(instr)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         result = {'name': self.name}
         if self.args:
             result['args'] = self.args
@@ -195,10 +205,10 @@ class Function:
         return result
 
 class Program:
-    def __init__(self, prog: Dict[str, Any]):
+    def __init__(self, prog: dict[str, Any]):
         self.functions = [Function(func) for func in prog.get('functions', [])]
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {'functions': [func.to_dict() for func in self.functions]}
 
 def parse_bril(json_str: str) -> Program:
