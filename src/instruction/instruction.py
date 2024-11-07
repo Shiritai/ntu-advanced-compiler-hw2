@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from logger.logger import logger
 from instruction.common import OpType
@@ -20,3 +20,15 @@ class Instruction:
 
     def __repr__(self):
         return json.dumps(self.to_dict())
+
+ConstInstKeys = Literal["op", "type", "dest", "value"]
+ConstInst = dict[ConstInstKeys, Any]
+
+ValueOperationInstKeys = Literal["op", "type", "dest", "args", "funcs", "labels"]
+ValueOperationInst = dict[ValueOperationInstKeys, Any]
+
+EffectOperationInstKeys = Literal["op", "args", "funcs", "labels"]
+EffectOperationInst = dict[EffectOperationInstKeys, Any]
+
+LabelInstKeys = Literal["op", "label"]
+LabelInst = dict[LabelInstKeys, Any]
