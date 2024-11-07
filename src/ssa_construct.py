@@ -1,6 +1,9 @@
-from typing import Dict, List, Set
-from bril import Const, Function, Instruction, ValueOperation
+from collections import deque
+from bril import Const, EffectOperation, Function, Instruction, Label, ValueOperation
 from cfg import CFG, BasicBlock
+from instruction.common import ValType
+from instruction.ssa import SsaOpType
+from util import new_name
 from logger.logger import logger
 from dominance import DominatorTree
 
@@ -85,12 +88,71 @@ def insert_phi_functions(dom_tree: DominatorTree,
                 if df.insert_phi_if_not_exist_for(var, def_type):
                     q.append(df)
 
-def rename_variables(cfg: CFG, dom_tree: DominatorTree):
+def rename_variables(cfg: CFG,
+                     dom_tree: DominatorTree,
+                     defs: dict[str,
+                     set[BasicBlock]],
+                     global_names: set[str]):
     """
     Renames variables to ensure each assignment is unique.
     """
     # TODO: Implement variable renaming
-    pass
+    names = set(defs)
+    rename_stacks: dict[str, list[int]] = {}
+
+    def rename(var: str):
+        renamed_var = new_name(f"{var}.", names, 0)
+        names.add(renamed_var)
+        rename_stacks.setdefault(var, []).append(renamed_var)
+        return renamed_var
+
+    def scan_and_rename(bb: BasicBlock, depth = 0):
+        snapshot = { k: list(v) for k, v in rename_stacks.items() }
+
+        for phi in bb.get_by_op(SsaOpType.PHI):
+            phi.dest = rename(phi.dest)
+
+        local_defs: set[str] = set()
+        for i in bb.insts:
+            if (isinstance(i, (ValueOperation, Const)) and
+                i.op != SsaOpType.PHI):
+                if hasattr(i, 'args') and i.args is not None:
+                    i.args = [rename_stacks[arg][-1] if arg in rename_stacks else arg
+                              for arg in i.args]
+                if i.dest in global_names or i.dest in local_defs or i.dest.find('.') == -1:
+                    i.dest = rename(i.dest)
+                local_defs.add(i.dest)
+            if (isinstance(i, EffectOperation) and
+                i.op != SsaOpType.PHI):
+                if hasattr(i, 'args') and i.args is not None:
+                    i.args = [rename_stacks[arg][-1] if arg in rename_stacks else arg
+                              for arg in i.args]
+
+        # rename phi in succ
+        for sbb in bb.succs:
+            for i in sbb.insts:
+                if (isinstance(i, ValueOperation) and
+                    i.op == SsaOpType.PHI):
+                    # TODO fill in phi parameters
+                    dot = i.dest.find('.')
+                    var = i.dest if dot == -1 else i.dest[:dot]
+                    if rename_stacks.get(var) is not None:
+                        i.args.append(rename_stacks[var][-1])
+                        i.labels.append(bb.label)
+                    else:
+                        i.args.append(f"{var}.undefined")
+                        i.labels.append(bb.label)
+                    
+        for sbb in dom_tree.children.get(bb.label, []):
+            scan_and_rename(sbb, depth + 1)
+
+        rename_stacks.clear()
+        rename_stacks.update(snapshot)
+
+    # Include function arguments
+    for arg_idx in range(len(cfg.function.args)):
+        cfg.function.args[arg_idx]['name'] = rename(cfg.function.args[arg_idx]['name'])
+    scan_and_rename(cfg.entry_block)
 
 def reconstruct_instructions(cfg: CFG) -> List[Instruction]:
     """
